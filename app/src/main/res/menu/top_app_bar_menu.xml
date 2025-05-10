@@ -1,0 +1,17 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_load_config"
+        android:title="加载配置" />
+    <item
+        android:id="@+id/action_save_config"
+        android:title="保存配置" />
+    <item
+        android:id="@+id/action_copy_config"
+        android:title="复制配置" />
+    <item
+        android:id="@+id/action_import_config"
+        android:title="导入配置"></item>
+    <item
+        android:id="@+id/action_delete_config"
+        android:title="删除配置" />
+</menu>
