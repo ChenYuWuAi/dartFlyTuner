@@ -29,14 +29,20 @@ import java.util.Collection
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.BitmapDrawable
+import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.EditText
 import org.json.JSONException
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var editPrimaryYaw: TextInputEditText
-    private lateinit var editPrimaryYawOffset: TextInputEditText
     private lateinit var editPrimaryForce: TextInputEditText
     private lateinit var editPrimaryForceOffset: TextInputEditText
     private lateinit var editAuxiliaryYawOffsets: Array<TextInputEditText>
@@ -47,9 +53,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var switchAutoAimEnabled: SwitchMaterial
     private lateinit var checkboxes: Map<String, MaterialCheckBox>
     private lateinit var ivQR: ImageView
-    private lateinit var btnGenerateQR: MaterialButton
     private lateinit var toggleCommandType: MaterialButtonToggleGroup
     private lateinit var btnSelectAll: MaterialButton
+
+    private val qrHandler = Handler(Looper.getMainLooper())
+    private var qrRunnable: Runnable? = null
+    private val DEBOUNCE_MS = 300L
 
     // Request code for QR scanner
     private val REQUEST_SCAN_QR = 1001
@@ -263,11 +272,36 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 初始化 Toolbar
+        bindViews()
+        setupListeners()
+        updateQRCode() // 初始生成一次
+
+        // 如果有保存的配置文件，自动加载
+        val files =
+            filesDir.listFiles { f -> f.extension == "json" }?.map { it.name }?.toTypedArray()
+                ?: arrayOf()
+        if (files.isNotEmpty()) {
+            val json = openFileInput(files[0]).bufferedReader()
+                .use { it.readText() }
+            val root = JSONObject(json)
+            // Log Data
+            Log.d("DartFlyTuner", root.toString(4))
+            try {
+                val data = root.getJSONObject("data")
+            } catch (e: Exception) {
+                Toast.makeText(this, "配置文件格式错误", Toast.LENGTH_SHORT).show()
+                return
+            }
+            parseJsonToWidget(root)
+            checkboxes.values.forEach { it.isChecked = true }
+            Toast.makeText(this, "已加载 ${files[0]}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun bindViews() {
         val topAppBar = findViewById<MaterialToolbar>(R.id.top_app_bar)
         setSupportActionBar(topAppBar)
 
-        // 初始化 EditText 和 Switch
         editPrimaryYaw = findViewById(R.id.edit_primary_yaw)
         editPrimaryForce = findViewById(R.id.edit_primary_force)
         editPrimaryForceOffset = findViewById(R.id.edit_primary_force_offset)
@@ -278,7 +312,6 @@ class MainActivity : AppCompatActivity() {
             findViewById(R.id.edit_auxiliary_yaw_offset_2),
             findViewById(R.id.edit_auxiliary_yaw_offset_3)
         )
-
         editAuxiliaryForceOffsets = arrayOf(
             findViewById(R.id.edit_auxiliary_force_offset_0),
             findViewById(R.id.edit_auxiliary_force_offset_1),
@@ -291,11 +324,12 @@ class MainActivity : AppCompatActivity() {
         editTargetAutoAimXAxis = findViewById(R.id.edit_target_auto_aim_x_axis)
         switchAutoAimEnabled = findViewById(R.id.switch_auto_aim_enabled)
         ivQR = findViewById(R.id.iv_qr)
-        btnGenerateQR = findViewById(R.id.btn_generate_qr)
+        toggleCommandType = findViewById(R.id.toggle_command_type)
+        // 默认选中第一个按钮
+        toggleCommandType.check(R.id.btn_params)
 
-        // 初始化复选框
         checkboxes = mapOf(
-            "primary_yaw" to findViewById<MaterialCheckBox>(R.id.checkbox_primary_yaw),
+            "primary_yaw" to findViewById(R.id.checkbox_primary_yaw),
             "primary_force" to findViewById(R.id.checkbox_primary_force),
             "primary_force_offset" to findViewById(R.id.checkbox_primary_force_offset),
             "auxiliary_yaw_offsets" to findViewById(R.id.checkbox_auxiliary_yaw_offsets),
@@ -305,38 +339,67 @@ class MainActivity : AppCompatActivity() {
             "target_auto_aim_x_axis" to findViewById(R.id.checkbox_target_auto_aim_x_axis)
         )
 
-        // 生成二维码按钮点击事件
-
-        toggleCommandType = findViewById(R.id.toggle_command_type)
-
-        btnGenerateQR.setOnClickListener { generateQRCode() }
-
-        // 初始化全选按钮
         btnSelectAll = findViewById(R.id.btn_select_all)
-        btnSelectAll.setOnClickListener { toggleAllCheckboxes() }
+    }
 
-        // Toggle Group 选定Params
-        toggleCommandType.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                when (checkedId) {
-                    R.id.btn_params -> {
-                        // 选中 Params
-                        Log.d("DartFlyTuner", "Params selected")
-                    }
+    private fun setupListeners() {
+        // 复选框 & 开关
+        checkboxes.values.forEach { cb ->
+            cb.setOnCheckedChangeListener { _, _ -> scheduleQRCodeUpdate() }
+        }
+        switchAutoAimEnabled.setOnCheckedChangeListener { _, _ -> scheduleQRCodeUpdate() }
 
-                    R.id.btn_protocols -> {
-                        // 选中 Protocols
-                        Log.d("DartFlyTuner", "Protocols selected")
-                    }
-
-                    else -> {
-                        // 选中其他按钮
-                        Log.d("DartFlyTuner", "Other button selected")
-                    }
-                }
+        // 文本输入防抖
+        val watcher = object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                scheduleQRCodeUpdate()
             }
+
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        }
+        listOf(
+            editPrimaryYaw, editPrimaryForce, editPrimaryForceOffset,
+            editDartLaunchProcessOffsetBegin, editDartLaunchProcessOffsetEnd,
+            editTargetAutoAimXAxis
+        ).forEach { it.addTextChangedListener(watcher) }
+        editAuxiliaryYawOffsets.forEach { it.addTextChangedListener(watcher) }
+        editAuxiliaryForceOffsets.forEach { it.addTextChangedListener(watcher) }
+
+        // 切换组
+        toggleCommandType.addOnButtonCheckedListener { _, _, isChecked ->
+            if (isChecked) scheduleQRCodeUpdate()
+        }
+
+        // 全选按钮
+        btnSelectAll.setOnClickListener { toggleAllCheckboxes() }
+    }
+
+    private fun scheduleQRCodeUpdate() {
+        qrRunnable?.let { qrHandler.removeCallbacks(it) }
+        qrRunnable = Runnable { updateQRCode() }
+        qrHandler.postDelayed(qrRunnable!!, DEBOUNCE_MS)
+    }
+
+    private fun updateQRCode() {
+        val root = assembleConfigJson()
+        val content = root.toString()
+        try {
+            val size = 400
+            val hints = mapOf(EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L)
+            val bitMatrix = MultiFormatWriter().encode(
+                content, BarcodeFormat.QR_CODE, size, size, hints
+            )
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
+            for (x in 0 until size) for (y in 0 until size) {
+                bitmap.setPixel(x, y, if (bitMatrix[x, y]) Color.BLACK else Color.WHITE)
+            }
+            ivQR.setImageBitmap(bitmap)
+        } catch (e: WriterException) {
+            Toast.makeText(this, "二维码生成失败：${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Unit {
         super.onActivityResult(requestCode, resultCode, data)
@@ -381,6 +444,58 @@ class MainActivity : AppCompatActivity() {
 
             R.id.action_delete_config -> {
                 deleteConfig()
+                true
+            }
+
+            R.id.action_import_config_from_clipboard -> {
+                AlertDialog.Builder(this)
+                    .setTitle("从剪贴板导入")
+                    .setMessage("是否从剪贴板导入配置？")
+                    .setPositiveButton("确定") { _, _ ->
+                        val clipboard =
+                            getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                        val clip = clipboard.primaryClip
+                        if (clip != null && clip.itemCount > 0) {
+                            val jsonString = clip.getItemAt(0).text.toString()
+                            try {
+                                val root = JSONObject(jsonString)
+                                parseJsonToWidget(root)
+                                Toast.makeText(this, "已导入剪贴板配置", Toast.LENGTH_SHORT).show()
+                            } catch (e: JSONException) {
+                                Toast.makeText(this, "剪贴板内容不是有效 JSON", Toast.LENGTH_LONG)
+                                    .show()
+                            }
+                        }
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
+                true
+            }
+
+            R.id.action_about -> {
+                AlertDialog.Builder(this)
+                    .setTitle("关于DartFlyTuner")
+                    .setMessage("作者：东南大学 3SE战队 程浩\nGitHub: https://github.com/ChenYuWuAi")
+                    .setPositiveButton("好") { _, _ -> }
+                    .show()
+                true
+            }
+
+            R.id.action_export_config -> {
+                // 将当前二维码保存为图片
+                val bitmap = (ivQR.drawable as BitmapDrawable).bitmap
+                val path =
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+
+                val file = File(path, "DartFlyTuner_QRCode${System.currentTimeMillis()}.png")
+                try {
+                    FileOutputStream(file).use { out ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    }
+                    Toast.makeText(this, "二维码已保存到 $path", Toast.LENGTH_SHORT).show()
+                } catch (e: IOException) {
+                    Toast.makeText(this, "保存二维码失败：${e.message}", Toast.LENGTH_LONG).show()
+                }
                 true
             }
 

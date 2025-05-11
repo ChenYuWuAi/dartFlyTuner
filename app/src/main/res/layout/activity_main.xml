@@ -15,7 +15,7 @@
             android:layout_width="match_parent"
             android:layout_height="150dp"
             android:fitsSystemWindows="true"
-            app:contentScrim="@color/purple_200"
+            app:contentScrim="?attr/colorPrimaryVariant"
             app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
 
             <com.google.android.material.appbar.MaterialToolbar
@@ -34,7 +34,7 @@
                     android:layout_gravity="end"
                     android:contentDescription="全选"
                     app:icon="@drawable/outline_check_box_24"
-                    app:iconTint="@color/gray" />
+                    app:iconTint="?attr/colorOnSecondaryContainer" />
 
             </com.google.android.material.appbar.MaterialToolbar>
 
@@ -61,10 +61,10 @@
                 <!-- CardView Form Container -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/card_form"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    app:cardCornerRadius="12dp"
+                    app:cardCornerRadius="32dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
@@ -91,7 +91,9 @@
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_primary_yaw"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:digits="0123456789-"
+                                android:inputType="numberSigned" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- Primary Force -->
@@ -111,7 +113,9 @@
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_primary_force"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:digits="0123456789-"
+                                android:inputType="numberSigned" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- Primary Force Offset -->
@@ -131,7 +135,9 @@
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_primary_force_offset"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:digits="0123456789-"
+                                android:inputType="numberSigned" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- Auxiliary Yaw Offsets -->
@@ -157,7 +163,9 @@
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/edit_auxiliary_yaw_offset_0"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content" />
+                                    android:layout_height="wrap_content"
+                                    android:digits="0123456789-"
+                                    android:inputType="numberSigned" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -169,7 +177,9 @@
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/edit_auxiliary_yaw_offset_1"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content" />
+                                    android:layout_height="wrap_content"
+                                    android:digits="0123456789-"
+                                    android:inputType="numberSigned" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -181,7 +191,9 @@
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/edit_auxiliary_yaw_offset_2"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content" />
+                                    android:layout_height="wrap_content"
+                                    android:digits="0123456789-"
+                                    android:inputType="numberSigned" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -193,7 +205,9 @@
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/edit_auxiliary_yaw_offset_3"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content" />
+                                    android:layout_height="wrap_content"
+                                    android:digits="0123456789-"
+                                    android:inputType="numberSigned" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                         </LinearLayout>
@@ -221,7 +235,9 @@
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/edit_auxiliary_force_offset_0"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content" />
+                                    android:layout_height="wrap_content"
+                                    android:digits="0123456789-"
+                                    android:inputType="numberSigned" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -233,7 +249,9 @@
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/edit_auxiliary_force_offset_1"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content" />
+                                    android:layout_height="wrap_content"
+                                    android:digits="0123456789-"
+                                    android:inputType="numberSigned" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -245,7 +263,9 @@
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/edit_auxiliary_force_offset_2"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content" />
+                                    android:layout_height="wrap_content"
+                                    android:digits="0123456789-"
+                                    android:inputType="numberSigned" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -257,7 +277,9 @@
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/edit_auxiliary_force_offset_3"
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content" />
+                                    android:layout_height="wrap_content"
+                                    android:digits="0123456789-"
+                                    android:inputType="numberSigned" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                         </LinearLayout>
@@ -279,7 +301,9 @@
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_dart_launch_process_offset_begin"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:digits="0123456789-"
+                                android:inputType="numberSigned" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- Dart Launch Process Offset End -->
@@ -299,7 +323,9 @@
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_dart_launch_process_offset_end"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:digits="0123456789-"
+                                android:inputType="numberSigned" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- Target Auto Aim X Axis -->
@@ -319,20 +345,22 @@
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_target_auto_aim_x_axis"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:digits="0123456789."
+                                android:inputType="numberDecimal" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- Auto Aim Switch -->
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/switch_auto_aim_enabled"
+                            style="@style/Widget.Material3.CompoundButton.MaterialSwitch"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:layout_marginStart="16dp"
-                            android:layout_marginEnd="16dp"
                             android:layout_gravity="start"
-                            style="@style/Widget.Material3.CompoundButton.MaterialSwitch"
-                            android:text="Auto Aim Enabled" />
+                            android:layout_marginStart="16dp"
+                            android:layout_marginTop="16dp"
+                            android:layout_marginEnd="16dp"
+                            android:text="绿灯自瞄" />
 
                         <com.google.android.material.button.MaterialButtonToggleGroup
                             android:id="@+id/toggle_command_type"
@@ -359,17 +387,6 @@
                                 android:text="DartProtocols" />
 
                         </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                        <!-- Generate QR Button -->
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_generate_qr"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="24dp"
-                            android:text="生成二维码"
-                            app:cornerRadius="8dp"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent" />
 
                         <!-- QR Code Image -->
                         <ImageView
