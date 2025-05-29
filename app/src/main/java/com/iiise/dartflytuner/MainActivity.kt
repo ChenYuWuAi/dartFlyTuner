@@ -50,6 +50,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editDartLaunchProcessOffsetBegin: TextInputEditText
     private lateinit var editDartLaunchProcessOffsetEnd: TextInputEditText
     private lateinit var editTargetAutoAimXAxis: TextInputEditText
+    private lateinit var editAdaptiveVelocityExpected: Array<TextInputEditText>
+    private lateinit var switchAdaptiveVelocityEnabled: SwitchMaterial
     private lateinit var switchAutoAimEnabled: SwitchMaterial
     private lateinit var checkboxes: Map<String, MaterialCheckBox>
     private lateinit var ivQR: ImageView
@@ -106,6 +108,20 @@ class MainActivity : AppCompatActivity() {
                 editAuxiliaryForceOffsets[i].setText(auxiliaryForceOffsets.getString(i))
             }
         }
+
+        // 如果存在自适应速度控制配置，则填充
+        val adaptiveVelocityConfig = json.optJSONObject("adaptive_velocity_control")
+        if (adaptiveVelocityConfig != null) {
+            val expectedVelocities = adaptiveVelocityConfig.optJSONArray("adaptive_velocity_expected")
+            if (expectedVelocities != null) {
+                for (i in 0 until expectedVelocities.length()) {
+                    editAdaptiveVelocityExpected[i].setText(expectedVelocities.getString(i))
+                }
+            }
+            switchAdaptiveVelocityEnabled.isChecked =
+                adaptiveVelocityConfig.optBoolean("adaptive_velocity_enabled", false)
+        }
+        // 否则不做任何操作
     }
 
 
@@ -213,6 +229,19 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        val adaptiveVelocityConfig = JSONObject()
+
+        if (checkboxes["adaptive_velocity_control"]?.isChecked == true) {
+            val expectedVelocities = editAdaptiveVelocityExpected.map {
+                it.text.toString()
+            }
+            putCollectionIntoJSONObject(
+                adaptiveVelocityConfig, "adaptive_velocity_expected", expectedVelocities as Collection<*>
+            )
+        }
+
+        adaptiveVelocityConfig.put("adaptive_velocity_enabled", switchAdaptiveVelocityEnabled.isChecked)
+
         config.put("auto_aim_enabled", switchAutoAimEnabled.isChecked)
 
         val commandType = when (toggleCommandType.checkedButtonId) {
@@ -223,6 +252,7 @@ class MainActivity : AppCompatActivity() {
         val root = JSONObject().apply {
             put("command_type", commandType)
             put("data", config)
+            put("adaptive_velocity_control", adaptiveVelocityConfig)
         }
         val content = root.toString()
         return root
@@ -319,10 +349,18 @@ class MainActivity : AppCompatActivity() {
             findViewById(R.id.edit_auxiliary_force_offset_3)
         )
 
+        editAdaptiveVelocityExpected = arrayOf(
+            findViewById(R.id.edit_adaptive_velocity_expected_0),
+            findViewById(R.id.edit_adaptive_velocity_expected_1),
+            findViewById(R.id.edit_adaptive_velocity_expected_2),
+            findViewById(R.id.edit_adaptive_velocity_expected_3)
+        )
+
         editDartLaunchProcessOffsetBegin = findViewById(R.id.edit_dart_launch_process_offset_begin)
         editDartLaunchProcessOffsetEnd = findViewById(R.id.edit_dart_launch_process_offset_end)
         editTargetAutoAimXAxis = findViewById(R.id.edit_target_auto_aim_x_axis)
         switchAutoAimEnabled = findViewById(R.id.switch_auto_aim_enabled)
+        switchAdaptiveVelocityEnabled = findViewById(R.id.switch_adaptive_velocity_control)
         ivQR = findViewById(R.id.iv_qr)
         toggleCommandType = findViewById(R.id.toggle_command_type)
         // 默认选中第一个按钮
@@ -336,7 +374,8 @@ class MainActivity : AppCompatActivity() {
             "auxiliary_force_offsets" to findViewById(R.id.checkbox_auxiliary_force_offsets),
             "dart_launch_process_offset_begin" to findViewById(R.id.checkbox_dart_launch_process_offset_begin),
             "dart_launch_process_offset_end" to findViewById(R.id.checkbox_dart_launch_process_offset_end),
-            "target_auto_aim_x_axis" to findViewById(R.id.checkbox_target_auto_aim_x_axis)
+            "target_auto_aim_x_axis" to findViewById(R.id.checkbox_target_auto_aim_x_axis),
+            "adaptive_velocity_control" to findViewById(R.id.checkbox_adaptive_velocity_control)
         )
 
         btnSelectAll = findViewById(R.id.btn_select_all)
@@ -348,6 +387,8 @@ class MainActivity : AppCompatActivity() {
             cb.setOnCheckedChangeListener { _, _ -> scheduleQRCodeUpdate() }
         }
         switchAutoAimEnabled.setOnCheckedChangeListener { _, _ -> scheduleQRCodeUpdate() }
+
+        switchAdaptiveVelocityEnabled.setOnCheckedChangeListener { _, _ -> scheduleQRCodeUpdate() }
 
         // 文本输入防抖
         val watcher = object : android.text.TextWatcher {
@@ -365,6 +406,7 @@ class MainActivity : AppCompatActivity() {
         ).forEach { it.addTextChangedListener(watcher) }
         editAuxiliaryYawOffsets.forEach { it.addTextChangedListener(watcher) }
         editAuxiliaryForceOffsets.forEach { it.addTextChangedListener(watcher) }
+        editAdaptiveVelocityExpected.forEach { it.addTextChangedListener(watcher) }
 
         // 切换组
         toggleCommandType.addOnButtonCheckedListener { _, _, isChecked ->
